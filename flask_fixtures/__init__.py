@@ -21,12 +21,9 @@ from .utils import can_persist_fixtures
 import six
 import importlib
 
-from flask import current_app
-from flask import _request_ctx_stack
-try:
-    from flask import _app_ctx_stack
-except ImportError:
-    _app_ctx_stack = None
+import flask
+from flask import current_app, g
+from flask.globals import app_ctx, request_ctx
 
 try:
     import simplejson as json
@@ -63,21 +60,17 @@ def push_ctx(app=None):
         ctx = app.test_request_context()
         ctx.fixtures_request_context = True
         ctx.push()
-        if _app_ctx_stack is not None:
-            _app_ctx_stack.top.fixtures_app_context = True
 
     # Make sure that we have an application in the current context
-    if (_app_ctx_stack is None or _app_ctx_stack.top is None) and _request_ctx_stack.top is None:
+    if not current_app and not flask.request:
         raise AssertionError('A Flask application must be specified for Fixtures to work.')
 
 
 def pop_ctx():
     """Removes the test context(s) from the current stack(s)
     """
-    if getattr(_request_ctx_stack.top, 'fixtures_request_context', False):
-        _request_ctx_stack.pop()
-    if _app_ctx_stack is not None and getattr(_app_ctx_stack.top, 'fixtures_app_context', False):
-        _app_ctx_stack.pop()
+    if request_ctx and getattr(request_ctx, 'fixtures_request_context', False):
+        request_ctx.pop()
 
 
 def setup(obj):
@@ -130,7 +123,6 @@ def load_fixtures_from_file(db, fixture_filename, fixtures_dirs=[]):
 def load_fixtures(db, fixtures):
     """Loads the given fixtures into the database.
     """
-    conn = db.engine.connect()
     metadata = db.metadata
 
     for fixture in fixtures:
@@ -138,13 +130,14 @@ def load_fixtures(db, fixtures):
             module_name, class_name = fixture['model'].rsplit('.', 1)
             module = importlib.import_module(module_name)
             model = getattr(module, class_name)
-            for fields in fixture['records']:
-                obj = model(**fields)
-                db.session.add(obj)
-            db.session.commit()
+            with db.engine.begin():
+                for fields in fixture['records']:
+                    obj = model(**fields)
+                    db.session.add(obj)
         elif 'table' in fixture:
             table = Table(fixture['table'], metadata)
-            conn.execute(table.insert(), fixture['records'])
+            with db.engine.begin() as conn:
+                conn.execute(table.insert(), fixture['records'])
         else:
             raise ValueError("Fixture missing a 'model' or 'table' field: {0}".format(json.dumps(fixture)))
 

@@ -34,6 +34,11 @@ except ImportError:
 
 try:
     import yaml
+
+    try:
+        from yaml import CLoader as YamlLoader
+    except ImportError:
+        from yaml import Loader as YamlLoader
 except ImportError:
     def load(self, filename):
         raise Exception("Could not load fixture '{0}'. Make sure you have PyYAML installed.".format(filename))
@@ -74,7 +79,7 @@ class YAMLLoader(FixtureLoader):
 
     def load(self, filename):
         with open(filename) as fin:
-            return yaml.load(fin)
+            return yaml.load(fin, Loader=YamlLoader)
 
 
 def load(filename):

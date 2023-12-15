@@ -9,7 +9,6 @@ from myapp.models import db, Book, Author
 from flask_fixtures import load_fixtures_from_file, push_ctx, pop_ctx
 
 # Configure the app with the testing configuration
-app.config.from_object('myapp.config.TestConfig')
 fixtures_dirs = [os.path.join(app.root_path, 'fixtures')]
 
 class TestLoadFixturesFromFile(unittest.TestCase):

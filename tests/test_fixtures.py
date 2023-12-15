@@ -18,9 +18,6 @@ from myapp.models import db, Book, Author
 
 from flask_fixtures import FixturesMixin
 
-# Configure the app with the testing configuration
-app.config.from_object('myapp.config.TestConfig')
-
 
 class TestMyApp(unittest.TestCase, FixturesMixin):
     """A basic set of tests to make sure that fixtures works.

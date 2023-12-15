@@ -32,9 +32,6 @@ from myapp.models import db, Book, Author
 from flask_fixtures import FixturesMixin
 from flask_fixtures.utils import can_persist_fixtures
 
-# Configure the app with the testing configuration
-app.config.from_object('myapp.config.TestConfig')
-
 
 # The setUpClass and tearDownClass methods were added to unittest.TestCase in
 # python 2.7, so if we're running a version of python below that this test
